@@ -38,8 +38,6 @@ def main():
     print("🚀 Bot started (polling)…")
     app.run_polling(close_loop=False)
 
-if __name__ == "__main__":
-
     main()
 import os, asyncio, datetime
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, LabeledPrice
@@ -202,5 +200,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
