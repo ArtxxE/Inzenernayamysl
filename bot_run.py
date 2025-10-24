@@ -183,23 +183,34 @@ async def successful_payment(update: Update, context: ContextTypes.DEFAULT_TYPE)
     await update.message.reply_text("🎉 Оплата получена! Безлимит активирован на 30 дней. Пиши /ask вопрос.")
 
 def main():
-    if not TOKEN or not OPENAI_API_KEY:
+   
+  if not TOKEN or not OPENAI_API_KEY:
         raise SystemExit("Нужны TOKEN и OPENAI_API_KEY в переменных окружения.")
+
     app = Application.builder().token(TOKEN).build()
-    app.add_handler(CommandHandler("start", start))
+
+   app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("help", help_cmd))
     app.add_handler(CommandHandler("ask", ask_cmd))
     app.add_handler(CommandHandler("limit", show_limit))
     app.add_handler(CommandHandler("buy", lambda u, c: paywall(u, c)))
+
+    
     app.add_handler(CallbackQueryHandler(on_cb))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, on_text))
+
+   
+    from telegram.ext import PreCheckoutQueryHandler
+    app.add_handler(PreCheckoutQueryHandler(pre_checkout_q))  
     app.add_handler(MessageHandler(filters.SUCCESSFUL_PAYMENT, successful_payment))
-    app.add_handler(MessageHandler(filters.StatusUpdate.PRE_CHECKOUT_QUERY, pre_checkout_q))
 
     print("🚀 Bot started (polling)…")
     app.run_polling(close_loop=False)
 
+
 if __name__ == "__main__":
     main()
+
 
 
 
