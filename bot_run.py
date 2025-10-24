@@ -194,6 +194,48 @@ from telegram.ext import (
     Application, CommandHandler, MessageHandler,
     CallbackQueryHandler, ContextTypes, filters, PreCheckoutQueryHandler
 )
+# режим пользователя: "gpt" | "plain"
+user_mode: dict[int, str] = {}
+
+async def on_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message:
+        return
+
+    uid = update.effective_user.id
+    text = update.message.text or ""
+    mode = user_mode.get(uid)
+
+    # --- GPT режим ---
+    if mode == "gpt":
+        if not OPENAI_API_KEY:
+            await update.message.reply_text("⚠️ OPENAI_API_KEY не задан. GPT недоступен.")
+            return
+
+        try:
+            await update.message.chat.send_action("typing")
+            resp = oai.chat.completions.create(
+                model=MODEL_NAME,  # например, "gpt-4o-mini" или твоя модель
+                messages=[
+                    {"role": "system", "content": "Отвечай полезно, коротко и по делу."},
+                    {"role": "user", "content": text},
+                ],
+            )
+            answer = resp.choices[0].message.content.strip()
+            await update.message.reply_text(answer or "Пустой ответ.")
+        except Exception as e:
+            await update.message.reply_text(f"⚠️ Ошибка GPT: {e}")
+        return
+
+    # --- Обычный режим ---
+    if mode == "plain":
+        await update.message.reply_text(f"Ты написал: {text}\n(Обычный режим без ИИ)")
+        return
+
+    # --- Режим не выбран ---
+    await update.message.reply_text(
+        "Выбери режим:\n🧠 GPT-чат (премиум) или 💬 Просто чат",
+        reply_markup=main_menu_kb(),
+    )
 
 def main():
     if not TOKEN or not OPENAI_API_KEY:
@@ -219,6 +261,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
