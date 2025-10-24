@@ -1,7 +1,7 @@
 import os
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
-TOKEN = "8397235255:AAHIC3lzoSTaP9fJBA0cIJ9JcOHQ2_xZhnA"  
+TOKEN = "8397235255:AAGnfRgDgKbGhMnhbtPzk__UPZgk7p5cU9A"  
 SUPPORT_USERNAME = os.getenv("SUPPORT_USERNAME", "#Poderzkabotainzenernayamysl")  
 CHANNEL_LINK = os.getenv("CHANNEL_LINK", "https://t.me/hizackuaeu")
 def main_menu_kb() -> InlineKeyboardMarkup:
@@ -39,4 +39,5 @@ def main():
     app.run_polling(close_loop=False)
 
 if __name__ == "__main__":
+
     main()
