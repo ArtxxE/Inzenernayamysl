@@ -70,7 +70,7 @@ async def inc_and_get_count(user_id: int) -> int:
     key = f"qcount:{user_id}:{datetime.date.today().isoformat()}"
     if redis:
         return int(redis.incr(key, 1))
-    # fallback
+    
     user_state.setdefault(key, 0)
     user_state[key] += 1
     return user_state[key]
@@ -85,15 +85,14 @@ async def get_count(user_id: int) -> int:
 def has_pro(user_id: int) -> bool:
     key = f"pro:{user_id}"
     if redis:
-        return redis.ttl(key) > 0  # есть неистёкшая подписка
-    return False  # в памяти опустим, лучше Redis
+        return redis.ttl(key) > 0  
+    return False  
 
 def grant_pro(user_id: int, days: int = 30):
     key = f"pro:{user_id}"
     if redis:
         redis.setex(key, days * 86400, "1")
 
-# ====== Кнопки ======
 def main_menu_kb() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup([
         [InlineKeyboardButton("🎓 Купить курс", callback_data="BUY")],
@@ -101,7 +100,6 @@ def main_menu_kb() -> InlineKeyboardMarkup:
         [InlineKeyboardButton("⭐ Безлимит GPT", callback_data="BUY_PRO")],
     ])
 
-# ====== Команды ======
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         "✅ Привет! Я отвечаю на вопросы с GPT.\n"
@@ -123,7 +121,6 @@ async def show_limit(update: Update, context: ContextTypes.DEFAULT_TYPE):
     left = "∞" if has_pro(update.effective_user.id) else max(0, FREE_DAILY - used)
     await update.message.reply_text(f"Остаток на сегодня: {left}")
 
-# ====== GPT ======
 async def ask_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     question = " ".join(context.args) if context.args else None
@@ -140,7 +137,7 @@ async def ask_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.chat.send_action("typing")
     try:
-        # простой вызов Chat Completions
+       
         resp = oai.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
@@ -154,7 +151,6 @@ async def ask_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text(answer or "пустой ответ :(")
 
-# ====== Paywall: Telegram Stars (инвойс) ======
 async def paywall(update: Update, context: ContextTypes.DEFAULT_TYPE):
     txt = ("Бесплатные вопросы закончились.\n"
            "Купи ⭐ Безлимит GPT на 30 дней и задавай сколько угодно.")
@@ -173,14 +169,13 @@ async def on_cb(update: Update, context: ContextTypes.DEFAULT_TYPE):
             title=PRO_PRODUCT_TITLE,
             description=PRO_PRODUCT_DESC,
             payload="pro_30days",
-            provider_token="",   # для Stars оставляем пустым
-            currency=CURRENCY,   # XTR — валюта звёзд
+            provider_token="",   
+            currency=CURRENCY,  
             prices=prices
         )
     elif q.data == "BACK_HOME":
         await q.edit_message_text("Главное меню:", reply_markup=main_menu_kb())
 
-# подтвердить покупку (Stars flow)
 async def pre_checkout_q(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.pre_checkout_query.answer(ok=True)
 
@@ -189,7 +184,6 @@ async def successful_payment(update: Update, context: ContextTypes.DEFAULT_TYPE)
     grant_pro(user_id, days=30)
     await update.message.reply_text("🎉 Оплата получена! Безлимит активирован на 30 дней. Пиши /ask вопрос.")
 
-# ====== Запуск ======
 def main():
     if not TOKEN or not OPENAI_API_KEY:
         raise SystemExit("Нужны TOKEN и OPENAI_API_KEY в переменных окружения.")
@@ -208,4 +202,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
