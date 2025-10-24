@@ -1,6 +1,15 @@
 import os
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
+from telegram.ext import (
+    Application,
+    CommandHandler,
+    MessageHandler,
+    CallbackQueryHandler,
+    ContextTypes,
+    filters,
+    PreCheckoutQueryHandler
+)
+
 TOKEN = os.getenv("TOKEN")  
 SUPPORT_USERNAME = os.getenv("SUPPORT_USERNAME", "#Poderzkabotainzenernayamysl")  
 CHANNEL_LINK = os.getenv("CHANNEL_LINK", "https://t.me/hizackuaeu")
@@ -181,35 +190,36 @@ async def successful_payment(update: Update, context: ContextTypes.DEFAULT_TYPE)
     user_id = update.effective_user.id
     grant_pro(user_id, days=30)
     await update.message.reply_text("🎉 Оплата получена! Безлимит активирован на 30 дней. Пиши /ask вопрос.")
+from telegram.ext import (
+    Application, CommandHandler, MessageHandler,
+    CallbackQueryHandler, ContextTypes, filters, PreCheckoutQueryHandler
+)
 
 def main():
-   
-  if not TOKEN or not OPENAI_API_KEY:
+    if not TOKEN or not OPENAI_API_KEY:
         raise SystemExit("Нужны TOKEN и OPENAI_API_KEY в переменных окружения.")
 
     app = Application.builder().token(TOKEN).build()
 
-   app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("help", help_cmd))
     app.add_handler(CommandHandler("ask", ask_cmd))
     app.add_handler(CommandHandler("limit", show_limit))
     app.add_handler(CommandHandler("buy", lambda u, c: paywall(u, c)))
 
-    
     app.add_handler(CallbackQueryHandler(on_cb))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, on_text))
 
    
-    from telegram.ext import PreCheckoutQueryHandler
-    app.add_handler(PreCheckoutQueryHandler(pre_checkout_q))  
+    app.add_handler(PreCheckoutQueryHandler(pre_checkout_q))
     app.add_handler(MessageHandler(filters.SUCCESSFUL_PAYMENT, successful_payment))
 
     print("🚀 Bot started (polling)…")
     app.run_polling(close_loop=False)
 
-
 if __name__ == "__main__":
     main()
+
 
 
 
