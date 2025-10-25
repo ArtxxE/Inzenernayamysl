@@ -56,7 +56,8 @@ from openai import OpenAI
 
 TOKEN = os.getenv("TOKEN")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-FREE_DAILY = int(os.getenv("FREE_DAILY", "10"))   
+MODEL_NAME = "gpt-4o-mini" 
+FREE_DAILY = int(os.getenv("FREE_DAILY", "30"))   
 UNLIMIT_PRICE_STARS = int(os.getenv("UNLIMIT_PRICE_STARS", "400"))  
 PRO_PRODUCT_TITLE = "Безлимитные вопросы GPT (на 30 дней)"
 PRO_PRODUCT_DESC  = "Безлимитные ответы GPT в этом боте. Действует 30 дней."
@@ -267,6 +268,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
