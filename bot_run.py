@@ -250,6 +250,8 @@ def main():
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("help", help_cmd))
     app.add_handler(CommandHandler("ask", ask_cmd))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, on_text))
+
     app.add_handler(CommandHandler("limit", show_limit))
     app.add_handler(CommandHandler("buy", lambda u, c: paywall(u, c)))
 
@@ -265,6 +267,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
