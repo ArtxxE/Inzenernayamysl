@@ -102,10 +102,12 @@ def grant_pro(user_id: int, days: int = 30):
         redis.setex(key, days * 86400, "1")
 
 def main_menu_kb() -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup([
+    return InlineKeyboardMarkup([ 
         [InlineKeyboardButton("🎓 Купить курс", callback_data="BUY")],
-        [InlineKeyboardButton("🧠 Спросить GPT", switch_inline_query_current_chat="")],
+        [InlineKeyboardButton("📣 Подписаться на канал", https://t.me/hizackuaeu)],
+        [InlineKeyboardButton("🆘 Поддержка", url=f"https://t.me/{@Poderzkabotainzenernayamysl}")]
         [InlineKeyboardButton("⭐ Безлимит GPT", callback_data="BUY_PRO")],
+        
     ])
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -268,6 +270,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
