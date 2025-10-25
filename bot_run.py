@@ -200,45 +200,35 @@ from telegram.ext import (
 # режим пользователя: "gpt" | "plain"
 user_mode: dict[int, str] = {}
 
+# --- GPT ответ для всех пользователей ---
 async def on_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message:
         return
 
-    uid = update.effective_user.id
-    text = update.message.text or ""
-    mode = user_mode.get(uid)
-
-        # --- GPT режим ---
-    if mode == "gpt":
-        if not OPENAI_API_KEY:
-            await update.message.reply_text("⚠️ OPENAI_API_KEY не задан. GPT недоступен.")
-            return
-
-        try:
-            await update.message.chat.send_action("typing")
-            resp = oai.chat.completions.create(
-                model=MODEL_NAME,  # например, "gpt-4o-mini" или твоя модель
-                messages=[
-                    {"role": "system", "content": "Отвечай полезно, коротко и по делу."},
-                    {"role": "user", "content": text},
-                ],
-            )
-            answer = resp.choices[0].message.content.strip()
-            await update.message.reply_text(answer or "Пустой ответ.")
-        except Exception as e:
-            await update.message.reply_text(f"⚠️ Ошибка GPT: {e}")
+    text = (update.message.text or "").strip()
+    if not text:
         return
 
-    # --- Обычный режим ---
-    if mode == "plain":
-        await update.message.reply_text(f"Ты написал: {text}\n(Обычный режим без ИИ)")
+    # Не реагировать на команды вроде /start, /buy и т.д.
+    if text.startswith("/"):
         return
 
-    # --- Режим не выбран ---
-    await update.message.reply_text(
-        "Выбери режим:\n🧠 GPT-чат (премиум) или 💬 Просто чат",
-        reply_markup=main_menu_kb(),
-    )
+    try:
+        await update.message.chat.send_action("typing")
+
+        response = oai.chat.completions.create(
+            model=MODEL_NAME,
+            messages=[
+                {"role": "system", "content": "Ты умный и дружелюбный ассистент Telegram-бота."},
+                {"role": "user", "content": text}
+            ]
+        )
+
+        answer = (response.choices[0].message.content or "").strip()
+        await update.message.reply_text(answer or "⚠️ Нет ответа от модели.")
+    except Exception as e:
+        await update.message.reply_text(f"⚠️ Ошибка GPT: {e}")
+
 
 def main():
     if not TOKEN or not OPENAI_API_KEY:
@@ -266,6 +256,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
