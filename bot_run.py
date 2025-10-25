@@ -208,11 +208,7 @@ async def on_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text or ""
     mode = user_mode.get(uid)
 
-    # 💎 Разрешаем владельцу пользоваться без ограничений
-    if uid == 803385182:  # 🔹 замени на свой Telegram ID
-        mode = "gpt"  # сразу активируем GPT-режим без лимитов
-
-     # --- GPT режим ---
+        # --- GPT режим ---
     if mode == "gpt":
         if not OPENAI_API_KEY:
             await update.message.reply_text("⚠️ OPENAI_API_KEY не задан. GPT недоступен.")
@@ -270,6 +266,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
