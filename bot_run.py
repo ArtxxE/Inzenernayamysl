@@ -104,8 +104,8 @@ def grant_pro(user_id: int, days: int = 30):
 def main_menu_kb() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup([ 
         [InlineKeyboardButton("🎓 Купить курс", callback_data="BUY")],
-        [InlineKeyboardButton("📣 Подписаться на канал", https://t.me/hizackuaeu)],
-        [InlineKeyboardButton("🆘 Поддержка", url=f"https://t.me/{@Poderzkabotainzenernayamysl}")]
+        [InlineKeyboardButton("📢 Подписаться на канал", url="https://t.me/hizackuaeu")],
+        [InlineKeyboardButton("🆘 Поддержка", url="https://t.me/poderzkabotainzenernayamysl")],
         [InlineKeyboardButton("⭐ Безлимит GPT", callback_data="BUY_PRO")],
         
     ])
@@ -270,6 +270,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
