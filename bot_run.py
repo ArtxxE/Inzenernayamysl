@@ -200,8 +200,72 @@ from telegram.ext import (
 # режим пользователя: "gpt" | "plain"
 user_mode: dict[int, str] = {}
 
-# --- GPT ответ для всех пользователей ---
+import re
+
+# ——— триггеры для запроса картинки (RU/UA) ———
+IMAGE_TRIGGERS = [
+    "сгенерируй", "сгенерировать", "нарисуй", "сделай", "сделай картинку",
+    "картинку", "картинка", "изображение", "фото",
+    "згенеруй", "згенерувати", "зроби", "зроби картинку", "намалюй", "створи"
+]
+
+def wants_image(text: str) -> bool:
+    t = text.lower()
+    return any(word in t for word in IMAGE_TRIGGERS)
+
+def extract_image_prompt(text: str) -> str:
+    # убираем служебные слова в начале, оставляем суть промпта
+    return re.sub(
+        r'^(?:/image|сгенерируй|сгенерировать|нарисуй|сделай(?:\s+картинку)?|'
+        r'згенеруй|згенерувати|зроби(?:\s+картинку)?|намалюй|створи)\s*',
+        '',
+        text.strip(),
+        flags=re.IGNORECASE
+    ).strip() or text.strip()
+
+# ——— ОТВЕТ БЕЗ /ask: если видим просьбу о картинке — рисуем, иначе — GPT-текст ———
 async def on_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message:
+        return
+
+    text = (update.message.text or "").strip()
+    if not text:
+        return
+
+    # не перехватываем команды (/start, /help, /buy ...)
+    if text.startswith("/"):
+        return
+
+    try:
+        if wants_image(text):
+            prompt = extract_image_prompt(text)
+            await update.message.chat.send_action("upload_photo")
+
+            # генерация картинки через OpenAI Images
+            img = oai.images.generate(
+                model="gpt-image-1",
+                prompt=prompt,
+                size="1024x1024"
+            )
+            url = img.data[0].url
+            cap = f"🖼️ Згенеровано: {prompt}" if prompt else "🖼️ Згенероване зображення"
+            await update.message.reply_photo(photo=url, caption=cap)
+            return
+
+        # иначе — обычный GPT-ответ
+        await update.message.chat.send_action("typing")
+        resp = oai.chat.completions.create(
+            model=MODEL_NAME,  # например: "gpt-4o-mini"
+            messages=[
+                {"role": "system", "content": "Ти розумний, дружній і відповідаєш коротко та по суті."},
+                {"role": "user", "content": text}
+            ],
+        )
+        answer = (resp.choices[0].message.content or "").strip()
+        await update.message.reply_text(answer or "⚠️ Немає відповіді від моделі.")
+    except Exception as e:
+        await update.message.reply_text(f"⚠️ Помилка: {e}")
+
     if not update.message:
         return
 
@@ -228,6 +292,28 @@ async def on_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(answer or "⚠️ Нет ответа от модели.")
     except Exception as e:
         await update.message.reply_text(f"⚠️ Ошибка GPT: {e}")
+import re
+
+# ——— триггеры для запроса картинки (RU/UA) ———
+IMAGE_TRIGGERS = [
+    "сгенерируй", "сгенерировать", "нарисуй", "сделай", "сделай картинку",
+    "картинку", "картинка", "изображение", "фото",
+    "згенеруй", "згенерувати", "зроби", "зроби картинку", "намалюй", "створи"
+]
+
+def wants_image(text: str) -> bool:
+    t = text.lower()
+    return any(word in t for word in IMAGE_TRIGGERS)
+
+def extract_image_prompt(text: str) -> str:
+    # убираем служебные слова в начале, оставляем суть промпта
+    return re.sub(
+        r'^(?:/image|сгенерируй|сгенерировать|нарисуй|сделай(?:\s+картинку)?|'
+        r'згенеруй|згенерувати|зроби(?:\s+картинку)?|намалюй|створи)\s*',
+        '',
+        text.strip(),
+        flags=re.IGNORECASE
+    ).strip() or text.strip()
 
 
 def main():
@@ -256,6 +342,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
