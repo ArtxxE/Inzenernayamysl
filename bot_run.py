@@ -40,6 +40,13 @@ CHANNEL_LINK = os.getenv("CHANNEL_LINK", "https://t.me/hizackuaeu")
 oai = OpenAI(api_key=OPENAI_API_KEY)
 
 user_state: dict[str, int] = {}
+conversation_history: dict[int, list[dict[str, str]]] = {}
+
+MAX_HISTORY_MESSAGES = int(os.getenv("MAX_HISTORY_MESSAGES", "8"))
+if MAX_HISTORY_MESSAGES < 2:
+    MAX_HISTORY_MESSAGES = 2
+elif MAX_HISTORY_MESSAGES % 2:
+    MAX_HISTORY_MESSAGES -= 1
 
 redis = None
 try:
@@ -143,17 +150,31 @@ def build_system_prompt(user_lang: str | None) -> str:
     return base_prompt
 
 
-def build_messages(text: str, user_lang: str | None) -> list[dict[str, Any]]:
-    return [
-        {"role": "system", "content": build_system_prompt(user_lang)},
-        {"role": "user", "content": text},
+def get_history(user_id: int) -> list[dict[str, str]]:
+    return conversation_history.get(user_id, [])
+
+
+def remember_interaction(user_id: int, user_text: str, assistant_text: str) -> None:
+    history = conversation_history.setdefault(user_id, [])
+    history.append({"role": "user", "content": user_text})
+    history.append({"role": "assistant", "content": assistant_text})
+    if len(history) > MAX_HISTORY_MESSAGES:
+        del history[:-MAX_HISTORY_MESSAGES]
+
+
+def build_messages(user_id: int, text: str, user_lang: str | None) -> list[dict[str, Any]]:
+    messages: list[dict[str, Any]] = [
+        {"role": "system", "content": build_system_prompt(user_lang)}
     ]
+    messages.extend(get_history(user_id))
+    messages.append({"role": "user", "content": text})
+    return messages
 
 
-async def ask_gpt(text: str, user_lang: str | None) -> str:
+async def ask_gpt(user_id: int, text: str, user_lang: str | None) -> str:
     response = oai.chat.completions.create(
         model=MODEL_NAME,
-        messages=build_messages(text, user_lang),
+        messages=build_messages(user_id, text, user_lang),
     )
     return (response.choices[0].message.content or "").strip()
 
@@ -195,7 +216,7 @@ async def paywall(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 async def ask_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user_id = update.effective_user.id
-    question = " ".join(context.args) if context.args else None
+    question = " ".join(context.args).strip() if context.args else None
     if not question:
         await update.message.reply_text("Напиши так: /ask твой вопрос")
         return
@@ -209,11 +230,16 @@ async def ask_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     await update.message.chat.send_action("typing")
     try:
-        answer = await ask_gpt(question, update.effective_user.language_code)
+        answer = await ask_gpt(
+            user_id, question, update.effective_user.language_code
+        )
     except Exception as exc:  # pragma: no cover - API/network errors
         answer = f"Ошибка OpenAI: {exc}"
 
-    await update.message.reply_text(answer or "пустой ответ :(")
+    cleaned_answer = answer or "пустой ответ :("
+    await update.message.reply_text(cleaned_answer)
+    if answer:
+        remember_interaction(user_id, question, cleaned_answer)
 
 
 async def on_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -227,11 +253,16 @@ async def on_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     # Здесь можно добавить генерацию картинок. Пока всегда отвечаем текстом.
     await update.message.chat.send_action("typing")
     try:
-        answer = await ask_gpt(text, update.effective_user.language_code)
+        answer = await ask_gpt(
+            update.effective_user.id, text, update.effective_user.language_code
+        )
     except Exception as exc:  # pragma: no cover - API/network errors
         answer = f"⚠️ Ошибка GPT: {exc}"
 
-    await update.message.reply_text(answer or "⚠️ Нет ответа от модели.")
+    cleaned_answer = answer or "⚠️ Нет ответа от модели."
+    await update.message.reply_text(cleaned_answer)
+    if answer:
+        remember_interaction(update.effective_user.id, text, cleaned_answer)
 
 
 async def on_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
